@@ -84,6 +84,14 @@ function tokenize(input)
 					ind = ind + 1
 					val = val .. input[ind]
 				end
+				if input[ind + 1] == '.' then -- float number
+					val = val .. '.'
+					ind = ind + 1
+					while isdigit(input[ind + 1]) do
+						ind = ind + 1
+						val = val .. input[ind]
+					end
+				end
 				table.insert(tokens, {type = NUMBER, value = tonumber(val)})
 			end
 			if probSymb then
