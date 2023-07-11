@@ -26,7 +26,10 @@ function new_env(parent)
 end
 
 --WARN: can override!
-function add_to_env(env,name,val) 
+function add_to_env(env,name,val)
+	if type(name) ~= "string" then
+		error("add_to_env expects string as name, "..type(name).." found")
+	end
 	env.defined[name] = true
 	env.values[name] = val
 end
@@ -91,11 +94,13 @@ function evaluate_fn_spform(fullList, env)
 	local variadic
 	for i,v in ipairs(params) do
 		if not is_sym(v) then
-			return nil, "not a symbol in arguments' list"
+			return nil, "not a symbol in arguments' list pos." .. tostring(i)
 		end
 		if v.name == "&" then
 			if i == #params - 1 then
-				-- TODO: is it checked to be a symbol?
+				if not is_sym(params[#params]) then
+					return nil, "not a symbol in arguments' list pos. vararg"
+				end
 				variadic = params[#params].name
 				break
 			else
