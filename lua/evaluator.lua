@@ -93,13 +93,13 @@ function evaluate_fn_spform(fullList, env)
 		if not is_sym(v) then
 			return nil, "not a symbol in arguments' list"
 		end
-		if v.name == "." then
+		if v.name == "&" then
 			if i == #params - 1 then
 				-- TODO: is it checked to be a symbol?
-				variadic = params[#params]
+				variadic = params[#params].name
 				break
 			else
-				return nil, "dot separator of variadic should be last-but-one in arguments' list"
+				return nil, "& separator of variadic should be last-but-one in arguments' list"
 			end
 		else
 			table.insert(args, v.name)
