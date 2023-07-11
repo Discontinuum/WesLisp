@@ -122,6 +122,10 @@ function is_sym(sexpr)
 	return (type(sexpr) == "table") and (sexpr.type == TSYM)
 end
 
+function new_sym(name)
+	return {name = name, type = TSYM}
+end
+
 function is_list(sexpr)
 	return (type(sexpr) == "table") and (sexpr.type == TLIST)
 end
@@ -178,7 +182,7 @@ function read_tokens(tokens)
 			return t.value
 		end
 		if t.type == SYMBOL then
-			local sym = {type = TSYM, name = t.value}
+			local sym = new_sym(t.value)
 			return sym
 		end
 		if t.type == STRING then
@@ -187,7 +191,7 @@ function read_tokens(tokens)
 		if t.type == QUOTE then
 			forward()
 			local qs = {type = TLIST}
-			table.insert(qs, {type = TSYM, name = "quote"})
+			table.insert(qs, new_sym("quote"))
 			local s, err = sexpr()
 			if err then
 				return nil, err

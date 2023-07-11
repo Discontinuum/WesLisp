@@ -128,13 +128,13 @@ function evaluate_let(fullList, env)
 	end
 	local bounds = fullList[2]
 	if not is_list(bounds) then
-		return nil, "not list as binding argument of "..fullList[1]
+		return nil, "not list as binding argument of "..fullList[1].name
 	end
 	if #bounds % 2 ~= 0 then
-		return nil, "uneven number of forms in binding argument of "..fullList[1]
+		return nil, "uneven number of forms in binding argument of "..fullList[1].name
 	end
 	
-	local star = fullList[1] == "let*"
+	local star = fullList[1].name == "let*"
 	local bound_vars = {}
 	local bound_vars_names = {} -- in case of nil values
 	local nenv = new_env(env)
@@ -149,11 +149,11 @@ function evaluate_let(fullList, env)
 	for i=1,#bounds,2 do
 		local sym, ex = bounds[i], bounds[i+1]
 		if not is_sym(sym) then -- don't evaluate, must be simply a symbol
-			return nil, "not a symbol in binding argument of "..fullList[1]
+			return nil, "not a symbol in binding argument of "..fullList[1].name
 		end
 		local resex, errex = eval_sexpr(ex, nenv)
 		if errex then
-			return nil, errex .." when evaluating value of "..sym.name .. " in "..fullList[1]
+			return nil, errex .." when evaluating value of "..sym.name .. " in "..fullList[1].name
 		end
 		bind_var(sym.name, resex)
 	end
@@ -162,6 +162,11 @@ function evaluate_let(fullList, env)
 			add_to_env(nenv, name, bound_vars[name])
 		end
 	end
+	local body = {type = TTOPLVL}
+	for i=3,#fullList do
+		table.insert(body, fullList[i])
+	end
+	return eval_sexpr(body, nenv)
 end
 
 function evaluate_special_form(fs, fullList, env)
@@ -203,12 +208,15 @@ function evaluate_special_form(fs, fullList, env)
 		end
 		return nil, nil
 	end
+	if fs.name == "let" or fs.name == "let*" then
+		return evaluate_let(fullList, env)
+	end
 end
 
 
 function eval_sexpr(sexpr, env)
 	local t = type(sexpr)
-	if t == "number" or t == "string" or t == "boolean" then
+	if t == "nil" or t == "number" or t == "string" or t == "boolean" then
 		return sexpr
 	end
 	if sexpr.type == TTOPLVL then
@@ -285,6 +293,8 @@ function(env)
 	return v.type
 end, ROOT_ENV, {"val"}))
 
+add_to_env(ROOT_ENV, "let", {type = TSPEC, name = "let"})
+add_to_env(ROOT_ENV, "let*", {type = TSPEC, name = "let*"})
 add_to_env(ROOT_ENV, "fn", {type = TSPEC, name = "fn"})
 add_to_env(ROOT_ENV, "if", {type = TSPEC, name = "if"})
 add_to_env(ROOT_ENV, "quote", {type = TSPEC, name = "quote"})
@@ -302,7 +312,7 @@ add_to_env(ROOT_ENV, "+", create_lua_function(function(env)
 	end
 	return s
 end, ROOT_ENV, {}, "val"))
-add_to_env(ROOT_ENV, "inc", create_lisp_function({{"+", type = TSYM}, 1, {"arg", type = TSYM}, type = TLIST}, ROOT_ENV, {"arg"}))
+add_to_env(ROOT_ENV, "inc", create_lisp_function({new_sym("+"), 1, new_sym("arg"), type = TLIST}, ROOT_ENV, {"arg"}))
 add_to_env(ROOT_ENV, "-", create_lua_function(function(env)
 	local s = find_in_env(env, "hd")
 	if type(s) ~= "number" then
@@ -315,7 +325,7 @@ add_to_env(ROOT_ENV, "-", create_lua_function(function(env)
 	
 	for i,v in ipairs(tail) do
 		if type(v) ~= "number" then
-			return nil, "tried to add non-number"
+			return nil, "tried to subtract non-number"
 		end
 		s = s - v
 	end
