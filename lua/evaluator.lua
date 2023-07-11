@@ -93,7 +93,7 @@ function evaluate_fn_spform(fullList, env)
 		if not is_sym(v) then
 			return nil, "not a symbol in arguments' list"
 		end
-		if v[1] == "." then
+		if v.name == "." then
 			if i == #params - 1 then
 				-- TODO: is it checked to be a symbol?
 				variadic = params[#params]
@@ -102,7 +102,7 @@ function evaluate_fn_spform(fullList, env)
 				return nil, "dot separator of variadic should be last-but-one in arguments' list"
 			end
 		else
-			table.insert(args, v[1])
+			table.insert(args, v.name)
 		end
 	end
 	local body = {type = TTOPLVL}
@@ -115,14 +115,20 @@ function evaluate_fn_spform(fullList, env)
 end
 
 --TODO: finish
+-- I decided to go for simplified syntax
+-- (let (a val1 b val2 c val3))
 function evaluate_let(fullList, env)
 	if #fullList < 2 then
 		return nil, "insufficient amount of argument for let/let* special form"
 	end
 	local bounds = fullList[2]
 	if not is_list(bounds) then
-		return nil, "malformed variable bounding argument in special form "..fullList[1]
+		return nil, "not list as binding argument of "..fullList[1]
 	end
+	if #bounds % 2 ~= 0 then
+		return nil, "uneven number of forms in binding argument of "..fullList[1]
+	end
+	
 	local star = fullList[1] == "let*"
 	local bound_vars = {}
 	local bound_vars_names = {} -- in case of nil values
@@ -135,10 +141,20 @@ function evaluate_let(fullList, env)
 			table.insert(bound_vars_names, var)
 		end
 	end
-	for i, v in ipairs(fullList) do
-		if is_sym(v) then-- variable mentioned with no value, bind to nil
-			bind_var(v, nil)
-		--elseif then
+	for i=1,#bounds,2 do
+		local sym, ex = bounds[i], bounds[i+1]
+		if not is_sym(sym) then -- don't evaluate, must be simply a symbol
+			return nil, "not a symbol in binding argument of "..fullList[1]
+		end
+		local resex, errex = eval_sexpr(ex, nenv)
+		if errex then
+			return nil, errex .." when evaluating value of "..sym.name .. " in "..fullList[1]
+		end
+		bind_var(sym.name, resex)
+	end
+	if not star then -- we initialized all variables, now add them to the env. let* has already done it
+		for i,name in ipairs(bound_vars_names) do
+			add_to_env(nenv, name, bound_vars[name])
 		end
 	end
 end
@@ -201,9 +217,9 @@ function eval_sexpr(sexpr, env)
 		return res
 	end
 	if sexpr.type == TSYM then
-		local res, found = find_in_env(env, sexpr[1])
+		local res, found = find_in_env(env, sexpr.name)
 		if not found then
-			return nil, "unbound variable "..sexpr[1]
+			return nil, "unbound variable "..sexpr.name
 		else
 			return res
 		end
@@ -262,7 +278,7 @@ function(env)
 		return type(v)
 	end
 	return v.type
-end, ROOT_ENV, {[1] = "val"}))
+end, ROOT_ENV, {"val"}))
 
 add_to_env(ROOT_ENV, "fn", {type = TSPEC, name = "fn"})
 add_to_env(ROOT_ENV, "if", {type = TSPEC, name = "if"})

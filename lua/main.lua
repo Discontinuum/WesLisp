@@ -170,7 +170,7 @@ function read_tokens(tokens)
 			return t.value
 		end
 		if t.type == SYMBOL then
-			local sym = {type = TSYM, [1] = t.value}
+			local sym = {type = TSYM, name = t.value}
 			return sym
 		end
 		if t.type == STRING then
@@ -179,7 +179,7 @@ function read_tokens(tokens)
 		if t.type == QUOTE then
 			forward()
 			local qs = {type = TLIST}
-			table.insert(qs, {type = TSYM, [1] = "quote"})
+			table.insert(qs, {type = TSYM, name = "quote"})
 			local s, err = sexpr()
 			if err then
 				return nil, err
@@ -280,7 +280,7 @@ function print_sexpr(expr)
 		return s
 	end
 	if expr.type == TSYM then
-		return expr[1]
+		return expr.name
 	end
 	if expr.type == TFUN then
 		return "#function#"
