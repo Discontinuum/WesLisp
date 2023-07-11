@@ -114,6 +114,7 @@ function evaluate_fn_spform(fullList, env)
 	return create_lisp_function(body, env, args, variadic)
 end
 
+--TODO: finish
 function evaluate_let(fullList, env)
 	if #fullList < 2 then
 		return nil, "insufficient amount of argument for let/let* special form"
