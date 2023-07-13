@@ -333,6 +333,47 @@ add_to_env(ROOT_ENV, "-", create_lua_function(function(env)
 end, ROOT_ENV, {"hd"}, "tl"))
 
 
+local function eq_impl(val1, val2) 
+	if type(val1) ~= type(val2) then
+		return false
+	end
+	if is_sym(val1) then
+		return val1.name == val2.name
+	end
+	if is_list(val1) then
+		if #val1 ~= #val2 then
+			return false
+		end
+		for i in ipairs(val1) do
+			if not eq_impl(val1[i], val2[i]) then
+				return false
+			end
+		end
+		return true
+	end
+	return val1 == val2
+end
+add_to_env(ROOT_ENV, "=", create_lua_function(function(env)
+	local s = find_in_env(env, "hd")
+	local tail = find_in_env(env, "tl")
+	if #tail == 0 then
+		return true
+	end
+
+	for i,v in ipairs(tail) do
+		if not eq_impl(s, v) then
+			return false
+		end
+	end
+	return true
+end, ROOT_ENV, {"hd"}, "tl"))
+
+add_to_env(ROOT_ENV, "not", create_lua_function(function(env)
+	local arg = find_in_env(env, "arg")
+	return not arg
+end, ROOT_ENV, {"arg"}))
+
+
 add_to_env(ROOT_ENV, "list", create_lua_function(function(env)
 	local r = {type = TLIST}
 	local val = find_in_env(env, "val")
